@@ -1,0 +1,30 @@
+# Build output
+target/
+*.jar
+!maven-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.classpath
+.project
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Secrets - never commit
+.env
+.env.*
+!.env.example
+*.p12
+*.jks
+secrets/
+
+# Logs
+logs/
+*.log

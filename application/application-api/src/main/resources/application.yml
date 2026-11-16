@@ -1,0 +1,87 @@
+spring:
+  application:
+    name: backend-platform
+
+  datasource:
+    url: ${APP_DB_URL:jdbc:mysql://localhost:3306/backend_platform?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false}
+    username: ${APP_DB_USERNAME:app}
+    password: ${APP_DB_PASSWORD:}
+    hikari:
+      pool-name: app-pool
+      maximum-pool-size: ${APP_DB_POOL_SIZE:15}
+      minimum-idle: ${APP_DB_MIN_IDLE:5}
+      connection-timeout: 10000
+      max-lifetime: 1800000
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      # Schema is owned by versioned SQL scripts in database/. Never create/update it from code.
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+          batch_size: 50
+          fetch_size: 100
+        order_inserts: true
+        order_updates: true
+        query:
+          fail_on_pagination_over_collection_fetch: true
+          in_clause_parameter_padding: true
+
+  data:
+    redis:
+      host: ${APP_REDIS_HOST:localhost}
+      port: ${APP_REDIS_PORT:6379}
+      password: ${APP_REDIS_PASSWORD:}
+
+  messages:
+    basename: messages/messages
+    encoding: UTF-8
+    fallback-to-system-locale: false
+
+  jackson:
+    time-zone: UTC
+    default-property-inclusion: non_null
+
+server:
+  port: ${APP_PORT:8080}
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+
+# Management endpoints stay on a separate port and are not meant for public exposure.
+management:
+  server:
+    port: ${APP_MANAGEMENT_PORT:8081}
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+      probes:
+        enabled: true
+
+app:
+  datetime:
+    zone: Asia/Tehran
+    locale: fa-IR
+    persian-digits-output: true
+  timezone:
+    storage: UTC
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  level:
+    root: INFO
+    com.project: INFO
