@@ -4,10 +4,10 @@
 # environment: add a new script and a new line instead.
 
 V0001__schema_change_log.sql      initial/   Creates SCHEMA_CHANGE_LOG (the ledger itself).
+V0002__refresh_token.sql         changes/   REFRESH_TOKEN (hash only, family id, rotation state).
 
 # Next entries (added with the corresponding entities):
-# V0002__platform_security_schema.sql   changes/   USER, ROLE, PERMISSION, USER_ROLE, ROLE_PERMISSION, REFRESH_TOKEN
-# V0003__system_error_log.sql           changes/   SYSTEM_ERROR_LOG
-# V0004__audit_log.sql                  changes/   AUDIT_LOG
-# V0005__user_module_schema.sql         changes/   USER module tables
+# V0003__user_module_schema.sql         changes/   USER, ROLE, PERMISSION, USER_ROLE, ROLE_PERMISSION + FK to REFRESH_TOKEN
+# V0004__system_error_log.sql           changes/   SYSTEM_ERROR_LOG
+# V0005__audit_log.sql                  changes/   AUDIT_LOG
 # V0006__user_module_indexes.sql        indexes/   Indexes for the user module queries
