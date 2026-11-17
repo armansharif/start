@@ -64,9 +64,30 @@ Business modules never depend on each other's internal packages (only on `*.api`
 - No Hibernate relations in entities, no Persian calendar logic outside `common-datetime`
   (enforced by ArchUnit rules in `common-test`, added in a later step).
 
-## Current state (Phase 1, step 1a)
+## Current state
 
-Structure, POMs and configuration are in place and the full reactor builds.
-`common-core` contains the error contract, `PageResult` and the dynamic search model.
-The other modules currently contain only their POM (dependency wiring) — their sources
-arrive in the following steps.
+Completed and verified by the build:
+
+| Area | State |
+|---|---|
+| Maven structure, POMs, guardrails | done |
+| `common-core`: error contract, `PageResult`, dynamic search model | done |
+| `common-datetime`: Time4J converter, strict parser, formatter, half-open ranges, validation annotations, clock | done (42 tests) |
+| `common-persistence`: `BaseEntity`, `BaseDao`, `AbstractJpaDao`, `AbstractJdbcDao`, dialect paging, auditing, `BaseService` | done (13 tests) |
+| `common-web`: `ApiResponse` envelope, `PageResponse`, `GlobalExceptionHandler`, message resolution, Persian date converter registration | done (4 tests) |
+| `common-test`: ArchUnit rule set | done (rules verified in `ArchitectureTest`) |
+| `database/`: ledger script, manifest, procedure | done (scripts not yet executed against a live MySQL: Docker is not installed here) |
+| `database` schema for security/user tables | pending (Phase 2/4) |
+| `common-security` (JWT, refresh tokens, RBAC) | pending (Phase 2) |
+| `common-cache`, `common-logging` (correlation, audit, system error log) | pending (Phase 3) |
+| `common-search` engine (JPA strategy + JDBC builder) | pending (Phase 3) |
+| `user-module` reference module | pending (Phase 4) |
+
+Total: 66 tests, all green.
+
+## Environment notes
+
+- This machine's `JAVA_HOME` points to JDK 8; builds must set it to the JDK 21 path.
+- Docker is not installed, so Testcontainers integration tests cannot run yet. They are
+  intentionally not added as failing tests; database-backed tests are written once Docker
+  (or a reachable MySQL) is available.

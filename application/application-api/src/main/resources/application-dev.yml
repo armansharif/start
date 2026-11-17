@@ -1,0 +1,17 @@
+# Development profile: local Docker infrastructure, verbose logging, schema validation.
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+logging:
+  level:
+    com.project: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.orm.jdbc.bind: TRACE
+
+app:
+  persistence:
+    dialect: MYSQL
+    default-page-size: 20
+    max-page-size: 100
