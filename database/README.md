@@ -30,7 +30,9 @@ Rules:
 3. Every script ends by inserting its own row into `SCHEMA_CHANGE_LOG`.
 4. Changes to a column type or a constraint get their own script; never mix unrelated
    changes in one file.
-5. Charset and collation are always explicit: `utf8mb4` / `utf8mb4_0900_ai_ci`.
+5. Charset and collation are always explicit: `utf8mb4` / `utf8mb4_unicode_ci`. The
+   `_0900_` collations exist only in MySQL 8+, while this platform is also developed
+   against MariaDB 10.4 (XAMPP) which rejects them; `utf8mb4_unicode_ci` works on both.
 6. Portable types only: `BIGINT`, `VARCHAR(n)`, `DECIMAL(p,s)`, `DATE`, `DATETIME(6)`,
    `TINYINT(1)`. No `ENUM`, `SET`, `JSON` columns, `TIMESTAMP` or unbounded `TEXT`.
 
@@ -42,6 +44,20 @@ Local development (MySQL from `docker-compose.yml`):
 docker compose up -d mysql
 mysql -h 127.0.0.1 -P 3306 -u app -p backend_platform < database/mysql/initial/V0001__schema_change_log.sql
 ```
+
+Or against a local MySQL/MariaDB service (server script order is `manifest.txt`):
+
+```bash
+mysql -u root -e "CREATE DATABASE IF NOT EXISTS backend_platform \
+  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+mysql -u root --default-character-set=utf8mb4 --init-command="SET @app_env='dev'" \
+      backend_platform < database/mysql/initial/V0001__schema_change_log.sql
+```
+
+Two practical rules, learned the hard way on Windows: pass `--default-character-set=utf8mb4`
+to every client invocation, and feed scripts through stdin from a file. A Persian literal
+placed directly in a `mysql -e "..."` argument is converted to `?` by the console codepage
+before the server sees it, which looks exactly like a broken application.
 
 Shared and production environments: a maintainer applies the scripts in manifest order,
 records who applied them in `APPLIED_BY`/`NOTES`, and verifies `SELECT * FROM

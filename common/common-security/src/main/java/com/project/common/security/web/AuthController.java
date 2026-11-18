@@ -8,7 +8,6 @@ import com.project.common.security.web.dto.TokenResponse;
 import com.project.common.web.api.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -18,12 +17,15 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * Authentication endpoints.
  *
- * <p>Registered only when a module supplies {@code AuthenticationUserPort}; the module
- * boundary stays intact while the endpoints live with the security infrastructure.</p>
+ * <p>Deliberately unconditional. The controller used to be annotated with
+ * {@code @ConditionalOnBean(AuthenticationService.class)}, which depends on configuration
+ * class scan order: the security package is scanned before the module that publishes the
+ * credential port, so the endpoints silently disappeared and every login returned 404.
+ * Now a missing {@code AuthenticationUserPort} fails the startup with a clear message
+ * instead of producing an application that answers but cannot authenticate.</p>
  */
 @RestController
 @RequestMapping("/api/v1/auth")
-@ConditionalOnBean(AuthenticationService.class)
 public class AuthController {
 
     private static final int MAX_USER_AGENT_LENGTH = 300;

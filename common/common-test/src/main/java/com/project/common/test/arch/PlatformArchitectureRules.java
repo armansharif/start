@@ -55,35 +55,27 @@ public final class PlatformArchitectureRules {
 
     /**
      * Controllers talk to services and DTOs, never to persistence or entities.
-     *
-     * <p>{@code allowEmptyShould} is temporarily required because no business module
-     * exists yet; it is removed as soon as the first controller is added (Phase 4).</p>
      */
     public static final ArchRule CONTROLLERS_DO_NOT_TOUCH_PERSISTENCE =
             noClasses()
                     .that().resideInAPackage("..controller..")
-                    .should().dependOnClassesThat().resideInAnyPackage("..dao..", "..entity..")
-                    .allowEmptyShould(true);
+                    .should().dependOnClassesThat().resideInAnyPackage("..dao..", "..entity..");
 
     /** Services depend on DAO interfaces only; implementations are wiring details. */
     public static final ArchRule SERVICES_DO_NOT_DEPEND_ON_DAO_IMPLEMENTATIONS =
             noClasses()
                     .that().resideInAPackage("..service.impl..")
-                    .should().dependOnClassesThat().resideInAPackage("..dao.impl..")
-                    .allowEmptyShould(true);
+                    .should().dependOnClassesThat().resideInAPackage("..dao.impl..");
 
-    /** Modules must not depend on each other in a cycle. */
-    public static final ArchRule COMMON_MODULES_ARE_FREE_OF_CYCLES =
+    /**
+     * Top level packages (common modules and business modules) must not depend on each
+     * other in a cycle. Business modules sit directly under {@code com.project}, so one
+     * slice per module is enough to keep the dependency graph acyclic.
+     */
+    public static final ArchRule PROJECT_PACKAGES_ARE_FREE_OF_CYCLES =
             SlicesRuleDefinition.slices()
-                    .matching("com.project.common.(*)..")
+                    .matching("com.project.(*)..")
                     .should().beFreeOfCycles();
-
-    /** Empty until the first business module is added (Phase 4), hence allowEmptyShould. */
-    public static final ArchRule BUSINESS_MODULES_ARE_FREE_OF_CYCLES =
-            SlicesRuleDefinition.slices()
-                    .matching("com.project.modules.(*)..")
-                    .should().beFreeOfCycles()
-                    .allowEmptyShould(true);
 
     /**
      * Matching by type name keeps this rule independent of the persistence API being on

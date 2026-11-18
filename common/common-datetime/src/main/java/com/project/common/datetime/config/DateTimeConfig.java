@@ -32,7 +32,7 @@ public class DateTimeConfig {
     @Bean
     public PersianDateFormatter persianDateFormatter(PersianDateConverter converter,
                                                      AppDateTimeProperties properties) {
-        return new PersianDateFormatter(converter, properties.isPersianDigitsOutput());
+        return new PersianDateFormatter(converter, properties.isPersianDigitsOutput(), properties.getZone());
     }
 
     @Bean

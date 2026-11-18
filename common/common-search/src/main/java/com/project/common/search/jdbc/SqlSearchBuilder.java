@@ -226,7 +226,7 @@ public class SqlSearchBuilder {
      * Builds a LIKE pattern with escaped wildcards, so a user searching for "50%" does not
      * turn the rest of the query into a wildcard.
      */
-    static String likePattern(Object value, boolean leadingWildcard, boolean trailingWildcard) {
+    public static String likePattern(Object value, boolean leadingWildcard, boolean trailingWildcard) {
         String text = String.valueOf(value);
         StringBuilder escaped = new StringBuilder(text.length() + 8);
         for (int i = 0; i < text.length(); i++) {

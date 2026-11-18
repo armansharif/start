@@ -2,16 +2,11 @@ spring:
   application:
     name: backend-platform
 
-  datasource:
-    url: ${APP_DB_URL:jdbc:mysql://localhost:3306/backend_platform?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false}
-    username: ${APP_DB_USERNAME:app}
-    password: ${APP_DB_PASSWORD:}
-    hikari:
-      pool-name: app-pool
-      maximum-pool-size: ${APP_DB_POOL_SIZE:15}
-      minimum-idle: ${APP_DB_MIN_IDLE:5}
-      connection-timeout: 10000
-      max-lifetime: 1800000
+  # Every database and Redis connection detail lives in application-db.yml,
+  # imported here so that one file (or the APP_DB_* / APP_REDIS_* environment
+  # variables) is enough to point the application at another server.
+  config:
+    import: classpath:application-db.yml
 
   jpa:
     open-in-view: false
@@ -29,12 +24,6 @@ spring:
         query:
           fail_on_pagination_over_collection_fetch: true
           in_clause_parameter_padding: true
-
-  data:
-    redis:
-      host: ${APP_REDIS_HOST:localhost}
-      port: ${APP_REDIS_PORT:6379}
-      password: ${APP_REDIS_PASSWORD:}
 
   messages:
     basename: messages/messages
@@ -68,6 +57,13 @@ management:
         enabled: true
 
 app:
+  security:
+    jwt:
+      # Never commit a real secret: supply APP_JWT_SECRET (>= 32 bytes) in the environment.
+      secret: ${APP_JWT_SECRET:}
+      issuer: ${APP_JWT_ISSUER:https://backend-platform.local}
+      access-token-ttl: ${APP_JWT_ACCESS_TTL:15m}
+      refresh-token-ttl: ${APP_JWT_REFRESH_TTL:30d}
   datetime:
     zone: Asia/Tehran
     locale: fa-IR

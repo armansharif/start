@@ -1,12 +1,15 @@
 package com.project.common.search.config;
 
 import com.project.common.datetime.config.AppDateTimeProperties;
+import com.project.common.persistence.sql.SqlDialectSupport;
+import com.project.common.search.jdbc.JdbcSearchExecutor;
 import com.project.common.search.jdbc.SqlSearchBuilder;
 import com.project.common.search.limits.SearchLimits;
 import com.project.common.search.metadata.SearchMetadataRegistry;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
 /**
  * Search engine wiring.
@@ -27,5 +30,13 @@ public class SearchConfig {
     @Bean
     public SqlSearchBuilder sqlSearchBuilder(SearchLimits limits, AppDateTimeProperties dateTimeProperties) {
         return new SqlSearchBuilder(limits, dateTimeProperties.getZone());
+    }
+
+    @Bean
+    public JdbcSearchExecutor jdbcSearchExecutor(NamedParameterJdbcTemplate jdbcTemplate,
+                                                 SqlSearchBuilder sqlSearchBuilder,
+                                                 SqlDialectSupport dialect,
+                                                 SearchLimits limits) {
+        return new JdbcSearchExecutor(jdbcTemplate, sqlSearchBuilder, dialect, limits);
     }
 }

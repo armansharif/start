@@ -4,7 +4,9 @@ import com.project.common.datetime.converter.PersianDateConverter;
 import com.project.common.datetime.model.PersianDate;
 import com.project.common.datetime.util.PersianDigits;
 
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Objects;
 
 /**
@@ -26,10 +28,16 @@ public class PersianDateFormatter {
 
     private final PersianDateConverter converter;
     private final boolean persianDigitsByDefault;
+    private final ZoneId zone;
 
     public PersianDateFormatter(PersianDateConverter converter, boolean persianDigitsByDefault) {
+        this(converter, persianDigitsByDefault, ZoneId.of("Asia/Tehran"));
+    }
+
+    public PersianDateFormatter(PersianDateConverter converter, boolean persianDigitsByDefault, ZoneId zone) {
         this.converter = Objects.requireNonNull(converter, "converter must not be null");
         this.persianDigitsByDefault = persianDigitsByDefault;
+        this.zone = Objects.requireNonNull(zone, "zone must not be null");
     }
 
     public String format(PersianDate date) {
@@ -60,6 +68,26 @@ public class PersianDateFormatter {
 
     public String format(LocalDate date, boolean persianDigits) {
         return format(converter.toPersian(date), persianDigits);
+    }
+
+    /**
+     * Formats a stored instant as a Persian calendar day in the configured zone.
+     *
+     * <p>An instant is a moment in time; its calendar day depends on the zone, so the zone
+     * is part of the formatter instead of being guessed at call sites.</p>
+     */
+    public String format(Instant instant) {
+        Objects.requireNonNull(instant, "instant must not be null");
+        return format(instant.atZone(zone).toLocalDate(), persianDigitsByDefault);
+    }
+
+    public String format(Instant instant, boolean persianDigits) {
+        Objects.requireNonNull(instant, "instant must not be null");
+        return format(instant.atZone(zone).toLocalDate(), persianDigits);
+    }
+
+    public ZoneId zone() {
+        return zone;
     }
 
     private static String applyDigits(String value, boolean persianDigits) {

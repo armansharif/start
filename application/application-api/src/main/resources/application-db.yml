@@ -1,0 +1,31 @@
+# =============================================================================
+#  THE ONLY PLACE WHERE DATABASE AND REDIS CONNECTIONS ARE DEFINED
+#
+#  This file is imported by application.yml (spring.config.import), so nothing
+#  else in the project repeats a host, port, database name or credential.
+#  Edit the defaults below for your machine, or leave them and override with the
+#  environment variables (values on the right of each ":" are the fallbacks).
+#
+#  Local development defaults match a stock XAMPP/MySQL install:
+#  root, no password, database "backend_platform" on localhost:3306.
+#  Shared and production environments must set the APP_DB_* variables and never
+#  rely on the root account.
+# =============================================================================
+
+spring:
+  datasource:
+    url: ${APP_DB_URL:jdbc:mysql://localhost:3306/backend_platform?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false}
+    username: ${APP_DB_USERNAME:root}
+    password: ${APP_DB_PASSWORD:}
+    hikari:
+      pool-name: app-pool
+      maximum-pool-size: ${APP_DB_POOL_SIZE:15}
+      minimum-idle: ${APP_DB_MIN_IDLE:5}
+      connection-timeout: 10000
+      max-lifetime: 1800000
+
+  data:
+    redis:
+      host: ${APP_REDIS_HOST:localhost}
+      port: ${APP_REDIS_PORT:6379}
+      password: ${APP_REDIS_PASSWORD:}

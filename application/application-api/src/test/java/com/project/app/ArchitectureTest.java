@@ -29,9 +29,5 @@ class ArchitectureTest {
             PlatformArchitectureRules.SERVICES_DO_NOT_DEPEND_ON_DAO_IMPLEMENTATIONS;
 
     @ArchTest
-    static final ArchRule commonModulesAreFreeOfCycles = PlatformArchitectureRules.COMMON_MODULES_ARE_FREE_OF_CYCLES;
-
-    @ArchTest
-    static final ArchRule businessModulesAreFreeOfCycles =
-            PlatformArchitectureRules.BUSINESS_MODULES_ARE_FREE_OF_CYCLES;
+    static final ArchRule projectPackagesAreFreeOfCycles = PlatformArchitectureRules.PROJECT_PACKAGES_ARE_FREE_OF_CYCLES;
 }

@@ -4,11 +4,13 @@ import com.project.common.core.security.CurrentUserProvider;
 import com.project.common.persistence.audit.CurrentUserAuditorAware;
 import com.project.common.persistence.sql.SqlDialectSupport;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.persistence.autoconfigure.EntityScan;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.domain.AuditorAware;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 /**
  * Persistence wiring.
@@ -22,6 +24,10 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
  */
 @Configuration(proxyBeanMethods = false)
 @EnableJpaAuditing(auditorAwareRef = "currentUserAuditorAware")
+// Entities and repositories live in the modules, not under the application's package, so
+// both scans are widened to the project root. Each module only contributes its own types.
+@EnableJpaRepositories(basePackages = "com.project")
+@EntityScan(basePackages = "com.project")
 @EnableConfigurationProperties(PersistenceProperties.class)
 public class PersistenceConfig {
 

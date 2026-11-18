@@ -14,13 +14,13 @@ import com.project.common.security.web.JwtAuthenticationFilter;
 import com.project.common.security.web.RestAccessDeniedHandler;
 import com.project.common.security.web.RestAuthenticationEntryPoint;
 import com.project.common.security.web.SecurityContextCurrentUserProvider;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -52,6 +52,7 @@ import java.time.Clock;
  */
 @Configuration(proxyBeanMethods = false)
 @EnableWebSecurity
+@EnableMethodSecurity
 @EnableConfigurationProperties(SecurityProperties.class)
 public class SecurityConfig {
 
@@ -124,11 +125,11 @@ public class SecurityConfig {
     }
 
     /**
-     * Login/refresh/logout are only wired when a module provides the credential port.
-     * Until then the endpoints do not exist instead of failing at startup.
+     * Authentication requires a credential source. It is required rather than conditional:
+     * a conditional bean here is evaluated in configuration scan order, which made the
+     * login endpoint disappear depending on which package was scanned first.
      */
     @Bean
-    @ConditionalOnBean(AuthenticationUserPort.class)
     public AuthenticationService authenticationService(AuthenticationUserPort users,
                                                        PasswordEncoder passwordEncoder,
                                                        JwtTokenService jwtTokenService,

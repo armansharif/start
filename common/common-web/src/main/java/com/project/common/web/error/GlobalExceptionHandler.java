@@ -69,10 +69,10 @@ public class GlobalExceptionHandler {
         List<ErrorItem> errors = new ArrayList<>();
         exception.getBindingResult().getFieldErrors().forEach(fieldError ->
                 errors.add(new ErrorItem(CommonErrorCode.VALIDATION_FAILED.code(),
-                        fieldError.getField(), fieldError.getDefaultMessage())));
+                        fieldError.getField(), messages.resolveTemplate(fieldError.getDefaultMessage()))));
         exception.getBindingResult().getGlobalErrors().forEach(globalError ->
                 errors.add(new ErrorItem(CommonErrorCode.VALIDATION_FAILED.code(),
-                        null, globalError.getDefaultMessage())));
+                        null, messages.resolveTemplate(globalError.getDefaultMessage()))));
         return build(HttpStatus.BAD_REQUEST,
                 messages.resolve(CommonErrorCode.VALIDATION_FAILED), errors);
     }
@@ -82,7 +82,7 @@ public class GlobalExceptionHandler {
         List<ErrorItem> errors = new ArrayList<>();
         for (ConstraintViolation<?> violation : exception.getConstraintViolations()) {
             errors.add(new ErrorItem(CommonErrorCode.VALIDATION_FAILED.code(),
-                    violation.getPropertyPath().toString(), violation.getMessage()));
+                    violation.getPropertyPath().toString(), messages.resolveTemplate(violation.getMessage())));
         }
         return build(HttpStatus.BAD_REQUEST,
                 messages.resolve(CommonErrorCode.VALIDATION_FAILED), errors);
