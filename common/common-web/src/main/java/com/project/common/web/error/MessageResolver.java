@@ -4,6 +4,7 @@ import com.project.common.core.error.ErrorCode;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 
+import java.util.Locale;
 import java.util.Objects;
 
 /**
@@ -12,18 +13,28 @@ import java.util.Objects;
  * <p>Messages live in {@code messages/messages_*.properties}; the code itself never
  * carries user facing text, so the same failure can be shown in Persian or English
  * without touching the business code.</p>
+ *
+ * <p>When the application fixes its locale, that locale wins over the request one. Some
+ * failures are answered outside the {@code DispatcherServlet} (Spring Security 401/403),
+ * where no request locale exists and the system default would leak another language.</p>
  */
 public class MessageResolver {
 
     private final MessageSource messageSource;
+    private final Locale fixedLocale;
 
     public MessageResolver(MessageSource messageSource) {
+        this(messageSource, null);
+    }
+
+    public MessageResolver(MessageSource messageSource, Locale fixedLocale) {
         this.messageSource = Objects.requireNonNull(messageSource, "messageSource must not be null");
+        this.fixedLocale = fixedLocale;
     }
 
     public String resolve(ErrorCode errorCode, Object... args) {
         return messageSource.getMessage(errorCode.messageKey(), args,
-                errorCode.defaultMessage(), LocaleContextHolder.getLocale());
+                errorCode.defaultMessage(), currentLocale());
     }
 
     /**
@@ -42,6 +53,10 @@ public class MessageResolver {
             return template;
         }
         String key = template.substring(1, template.length() - 1);
-        return messageSource.getMessage(key, null, template, LocaleContextHolder.getLocale());
+        return messageSource.getMessage(key, null, template, currentLocale());
+    }
+
+    private Locale currentLocale() {
+        return fixedLocale != null ? fixedLocale : LocaleContextHolder.getLocale();
     }
 }

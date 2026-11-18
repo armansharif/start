@@ -12,6 +12,7 @@ import org.springframework.format.FormatterRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.util.Arrays;
+import java.util.Locale;
 
 /**
  * Web layer wiring: type conversion and message resolution.
@@ -56,8 +57,22 @@ public class WebConfig implements WebMvcConfigurer {
         return source;
     }
 
+    /**
+     * Message resolver, pinned to the configured locale when the application fixes one.
+     *
+     * <p>With {@code spring.web.locale-resolver=fixed} the locale is the application's
+     * language, not the caller's: {@code spring.web.locale}. Resolving it here instead of
+     * reading {@code LocaleContextHolder} matters because responses produced outside the
+     * {@code DispatcherServlet} — Spring Security's 401/403 envelopes, for instance — start
+     * with no request locale, which used to fall back to the JVM default and answer in
+     * English.</p>
+     */
     @Bean
-    public MessageResolver messageResolver(MessageSource messageSource) {
-        return new MessageResolver(messageSource);
+    public MessageResolver messageResolver(MessageSource messageSource,
+                                           @Value("${spring.web.locale:}") String configuredLocale,
+                                           @Value("${spring.web.locale-resolver:accept-header}") String localeResolver) {
+        boolean fixed = !configuredLocale.isBlank() && "fixed".equalsIgnoreCase(localeResolver.trim());
+        Locale fixedLocale = fixed ? Locale.forLanguageTag(configuredLocale.trim().replace('_', '-')) : null;
+        return new MessageResolver(messageSource, fixedLocale);
     }
 }

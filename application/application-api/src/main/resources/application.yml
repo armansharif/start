@@ -30,6 +30,13 @@ spring:
     encoding: UTF-8
     fallback-to-system-locale: false
 
+  # Persian is the product default. A fixed resolver makes LocaleContextHolder return
+  # fa for every request, so error and validation messages resolve from
+  # messages_fa.properties even when the client sends Accept-Language: en.
+  web:
+    locale: fa
+    locale-resolver: fixed
+
   jackson:
     time-zone: UTC
     default-property-inclusion: non_null
