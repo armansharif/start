@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>کاربران | Backend Platform</title>
+    <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<header class="topbar">
+    <div>
+        <h1>کاربران</h1>
+        <p class="who" id="who">—</p>
+    </div>
+    <button type="button" class="btn-ghost" id="logout">خروج</button>
+</header>
+
+<main class="page">
+    <div class="alert" id="error" role="alert"></div>
+
+    <form class="toolbar" id="search-form">
+        <input type="search" id="keyword" placeholder="جستجو در نام، نام کاربری، موبایل یا ایمیل…">
+        <button type="submit" class="btn-ghost" id="search-button">جستجو</button>
+    </form>
+
+    <section class="card table-card">
+        <table>
+            <thead>
+            <tr>
+                <th>نام</th>
+                <th>نام کاربری</th>
+                <th class="hide-sm">موبایل</th>
+                <th class="hide-sm">ایمیل</th>
+                <th>وضعیت</th>
+                <th class="hide-sm">نقش‌ها</th>
+                <th class="hide-sm">تاریخ عضویت</th>
+            </tr>
+            </thead>
+            <tbody id="rows">
+            <tr>
+                <td colspan="7" class="empty">در حال بارگذاری…</td>
+            </tr>
+            </tbody>
+        </table>
+        <div class="pager">
+            <span id="summary">—</span>
+            <div class="buttons">
+                <button type="button" class="btn-ghost" id="prev">قبلی</button>
+                <button type="button" class="btn-ghost" id="next">بعدی</button>
+            </div>
+        </div>
+    </section>
+</main>
+
+<script>
+    const PAGE_SIZE = 10;
+
+    const state = {page: 0, keyword: '', totalPages: 1, totalElements: 0};
+    const rows = document.getElementById('rows');
+    const errorBox = document.getElementById('error');
+    const summary = document.getElementById('summary');
+    const prev = document.getElementById('prev');
+    const next = document.getElementById('next');
+
+    if (!sessionStorage.getItem('accessToken')) {
+        location.replace('/');
+    }
+
+    function currentUsername() {
+        const token = sessionStorage.getItem('accessToken');
+        if (!token || token.split('.').length < 2) {
+            return null;
+        }
+        try {
+            const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+            return JSON.parse(atob(base64)).username || null;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    document.getElementById('who').textContent =
+        'وارد شده به عنوان ' + (currentUsername() || 'کاربر');
+
+    function showError(message) {
+        errorBox.textContent = message;
+        errorBox.classList.add('visible');
+    }
+
+    function clearError() {
+        errorBox.classList.remove('visible');
+    }
+
+    function signOut() {
+        sessionStorage.clear();
+        location.replace('/');
+    }
+
+    function escapeHtml(value) {
+        return String(value == null ? '' : value)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    async function refreshToken() {
+        const stored = sessionStorage.getItem('refreshToken');
+        if (!stored) {
+            return false;
+        }
+        const response = await fetch('/api/v1/auth/refresh', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({refreshToken: stored})
+        });
+        const body = await response.json().catch(() => null);
+        if (!response.ok || !body || !body.success || !body.data) {
+            return false;
+        }
+        sessionStorage.setItem('accessToken', body.data.accessToken);
+        sessionStorage.setItem('refreshToken', body.data.refreshToken);
+        return true;
+    }
+
+    async function apiFetch(path, options) {
+        const send = (token) => fetch(path, {
+            ...options,
+            headers: {
+                ...(options && options.headers ? options.headers : {}),
+                ...(token ? {Authorization: 'Bearer ' + token} : {})
+            }
+        });
+
+        let response = await send(sessionStorage.getItem('accessToken'));
+        if (response.status === 401 && await refreshToken()) {
+            response = await send(sessionStorage.getItem('accessToken'));
+        }
+        if (response.status === 401) {
+            signOut();
+        }
+        return response;
+    }
+
+    function renderPage(page) {
+        if (!page.content || page.content.length === 0) {
+            rows.innerHTML = '<tr><td colspan="7" class="empty">کاربری پیدا نشد.</td></tr>';
+            return;
+        }
+        rows.innerHTML = page.content.map((user) => `
+            <tr>
+                <td>${escapeHtml(user.fullName || '—')}</td>
+                <td>${escapeHtml(user.username)}</td>
+                <td class="hide-sm">${escapeHtml(user.mobile || '—')}</td>
+                <td class="hide-sm">${escapeHtml(user.email || '—')}</td>
+                <td><span class="badge ${escapeHtml(user.status)}">${escapeHtml(user.status)}</span></td>
+                <td class="hide-sm">
+                    <div class="roles">${(user.roles || []).map((role) => `<span>${escapeHtml(role)}</span>`).join('') || '—'}</div>
+                </td>
+                <td class="hide-sm">${escapeHtml(user.createdDatePersian || '—')}</td>
+            </tr>`).join('');
+    }
+
+    async function load(page) {
+        clearError();
+        prev.disabled = true;
+        next.disabled = true;
+        try {
+            const response = await apiFetch('/api/v1/users/search', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    page,
+                    size: PAGE_SIZE,
+                    sortBy: 'username',
+                    sortDirection: 'ASC',
+                    keyword: state.keyword
+                })
+            });
+            const body = await response.json().catch(() => null);
+
+            if (response.status === 401) {
+                return;
+            }
+            if (!response.ok || !body || !body.success) {
+                const detail = body && (body.message || (body.errors && body.errors[0] && body.errors[0].message));
+                showError(detail || 'دریافت لیست کاربران ناموفق بود.');
+                rows.innerHTML = '<tr><td colspan="7" class="empty">داده‌ای برای نمایش نیست.</td></tr>';
+                return;
+            }
+
+            const result = body.data;
+            state.page = result.page;
+            state.totalPages = Math.max(result.totalPages, 1);
+            state.totalElements = result.totalElements;
+            renderPage(result);
+            summary.textContent = `صفحه ${result.page + 1} از ${state.totalPages} — ${result.totalElements} کاربر`;
+            prev.disabled = result.page <= 0;
+            next.disabled = !result.hasNext;
+        } catch (error) {
+            showError('ارتباط با سرور برقرار نشد.');
+        }
+    }
+
+    document.getElementById('search-form').addEventListener('submit', (event) => {
+        event.preventDefault();
+        state.keyword = document.getElementById('keyword').value.trim();
+        load(0);
+    });
+
+    prev.addEventListener('click', () => {
+        if (state.page > 0) {
+            load(state.page - 1);
+        }
+    });
+
+    next.addEventListener('click', () => {
+        if (state.page + 1 < state.totalPages) {
+            load(state.page + 1);
+        }
+    });
+
+    document.getElementById('logout').addEventListener('click', async () => {
+        const stored = sessionStorage.getItem('refreshToken');
+        try {
+            await fetch('/api/v1/auth/logout', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({refreshToken: stored})
+            });
+        } catch (error) {
+            // A failed logout call must not keep the user inside the page.
+        }
+        signOut();
+    });
+
+    load(0);
+</script>
+</body>
+</html>
