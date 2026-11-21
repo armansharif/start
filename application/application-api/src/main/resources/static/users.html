@@ -12,7 +12,10 @@
         <h1>کاربران</h1>
         <p class="who" id="who">—</p>
     </div>
-    <button type="button" class="btn-ghost" id="logout">خروج</button>
+    <nav class="nav">
+        <a href="/roles.html">نقش‌ها</a>
+        <button type="button" class="btn-ghost" id="logout">خروج</button>
+    </nav>
 </header>
 
 <main class="page">
@@ -32,13 +35,14 @@
                 <th class="hide-sm">موبایل</th>
                 <th class="hide-sm">ایمیل</th>
                 <th>وضعیت</th>
-                <th class="hide-sm">نقش‌ها</th>
+                <th>نقش‌ها</th>
                 <th class="hide-sm">تاریخ عضویت</th>
+                <th>عملیات</th>
             </tr>
             </thead>
             <tbody id="rows">
             <tr>
-                <td colspan="7" class="empty">در حال بارگذاری…</td>
+                <td colspan="8" class="empty">در حال بارگذاری…</td>
             </tr>
             </tbody>
         </table>
@@ -142,7 +146,7 @@
 
     function renderPage(page) {
         if (!page.content || page.content.length === 0) {
-            rows.innerHTML = '<tr><td colspan="7" class="empty">کاربری پیدا نشد.</td></tr>';
+            rows.innerHTML = '<tr><td colspan="8" class="empty">کاربری پیدا نشد.</td></tr>';
             return;
         }
         rows.innerHTML = page.content.map((user) => `
@@ -152,10 +156,11 @@
                 <td class="hide-sm">${escapeHtml(user.mobile || '—')}</td>
                 <td class="hide-sm">${escapeHtml(user.email || '—')}</td>
                 <td><span class="badge ${escapeHtml(user.status)}">${escapeHtml(user.status)}</span></td>
-                <td class="hide-sm">
+                <td>
                     <div class="roles">${(user.roles || []).map((role) => `<span>${escapeHtml(role)}</span>`).join('') || '—'}</div>
                 </td>
                 <td class="hide-sm">${escapeHtml(user.createdDatePersian || '—')}</td>
+                <td><a class="link" href="/user-roles.html?id=${encodeURIComponent(user.id)}">ویرایش نقش‌ها</a></td>
             </tr>`).join('');
     }
 
@@ -183,7 +188,7 @@
             if (!response.ok || !body || !body.success) {
                 const detail = body && (body.message || (body.errors && body.errors[0] && body.errors[0].message));
                 showError(detail || 'دریافت لیست کاربران ناموفق بود.');
-                rows.innerHTML = '<tr><td colspan="7" class="empty">داده‌ای برای نمایش نیست.</td></tr>';
+                rows.innerHTML = '<tr><td colspan="8" class="empty">داده‌ای برای نمایش نیست.</td></tr>';
                 return;
             }
 

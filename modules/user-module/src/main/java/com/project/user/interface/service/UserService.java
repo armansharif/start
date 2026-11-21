@@ -28,6 +28,8 @@ public interface UserService {
 
     void assignRoles(Long id, Set<String> roleCodes);
 
+    void removeRole(Long id, String roleCode);
+
     void delete(Long id);
 
     /** Entity oriented search (JPA specifications). */

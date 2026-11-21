@@ -17,5 +17,7 @@ public interface UserRoleRepository extends BaseJpaRepository<UserRole, Long> {
 
     void deleteByUserId(Long userId);
 
+    void deleteByUserIdAndRoleId(Long userId, Long roleId);
+
     boolean existsByUserIdAndRoleId(Long userId, Long roleId);
 }

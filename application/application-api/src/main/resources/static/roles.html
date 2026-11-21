@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>نقش‌ها | Backend Platform</title>
+    <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<header class="topbar">
+    <div>
+        <h1>نقش‌ها</h1>
+        <p class="who" id="who">—</p>
+    </div>
+    <nav class="nav">
+        <a href="/users.html">کاربران</a>
+        <button type="button" class="btn-ghost" id="logout">خروج</button>
+    </nav>
+</header>
+
+<main class="page">
+    <div class="alert" id="error" role="alert"></div>
+
+    <section class="card table-card">
+        <table>
+            <thead>
+            <tr>
+                <th>کد نقش</th>
+                <th>عنوان</th>
+                <th>عملیات</th>
+            </tr>
+            </thead>
+            <tbody id="rows">
+            <tr>
+                <td colspan="3" class="empty">در حال بارگذاری…</td>
+            </tr>
+            </tbody>
+        </table>
+        <div class="pager">
+            <span id="summary">—</span>
+        </div>
+    </section>
+</main>
+
+<script>
+    const rows = document.getElementById('rows');
+    const errorBox = document.getElementById('error');
+    const summary = document.getElementById('summary');
+
+    if (!sessionStorage.getItem('accessToken')) {
+        location.replace('/');
+    }
+
+    function currentUsername() {
+        const token = sessionStorage.getItem('accessToken');
+        if (!token || token.split('.').length < 2) {
+            return null;
+        }
+        try {
+            const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+            return JSON.parse(atob(base64)).username || null;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    document.getElementById('who').textContent =
+        'وارد شده به عنوان ' + (currentUsername() || 'کاربر');
+
+    function showError(message) {
+        errorBox.textContent = message;
+        errorBox.classList.add('visible');
+    }
+
+    function clearError() {
+        errorBox.classList.remove('visible');
+    }
+
+    function signOut() {
+        sessionStorage.clear();
+        location.replace('/');
+    }
+
+    function escapeHtml(value) {
+        return String(value == null ? '' : value)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    async function refreshToken() {
+        const stored = sessionStorage.getItem('refreshToken');
+        if (!stored) {
+            return false;
+        }
+        const response = await fetch('/api/v1/auth/refresh', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({refreshToken: stored})
+        });
+        const body = await response.json().catch(() => null);
+        if (!response.ok || !body || !body.success || !body.data) {
+            return false;
+        }
+        sessionStorage.setItem('accessToken', body.data.accessToken);
+        sessionStorage.setItem('refreshToken', body.data.refreshToken);
+        return true;
+    }
+
+    async function apiFetch(path, options) {
+        const send = (token) => fetch(path, {
+            ...options,
+            headers: {
+                ...(options && options.headers ? options.headers : {}),
+                ...(token ? {Authorization: 'Bearer ' + token} : {})
+            }
+        });
+
+        let response = await send(sessionStorage.getItem('accessToken'));
+        if (response.status === 401 && await refreshToken()) {
+            response = await send(sessionStorage.getItem('accessToken'));
+        }
+        if (response.status === 401) {
+            signOut();
+        }
+        return response;
+    }
+
+    async function load() {
+        clearError();
+        try {
+            const response = await apiFetch('/api/v1/roles');
+            const body = await response.json().catch(() => null);
+
+            if (response.status === 401) {
+                return;
+            }
+            if (!response.ok || !body || !body.success) {
+                const detail = body && (body.message || (body.errors && body.errors[0] && body.errors[0].message));
+                showError(detail || 'دریافت لیست نقش‌ها ناموفق بود.');
+                rows.innerHTML = '<tr><td colspan="3" class="empty">داده‌ای برای نمایش نیست.</td></tr>';
+                return;
+            }
+
+            const roles = body.data || [];
+            if (roles.length === 0) {
+                rows.innerHTML = '<tr><td colspan="3" class="empty">نقشی تعریف نشده است.</td></tr>';
+                summary.textContent = '۰ نقش';
+                return;
+            }
+            rows.innerHTML = roles.map((role) => `
+                <tr>
+                    <td><code>${escapeHtml(role.code)}</code></td>
+                    <td>${escapeHtml(role.title)}</td>
+                    <td class="action-links">
+                        <a class="link" href="/users.html">اساین به کاربران</a>
+                        <a class="link" href="/role-permissions.html?code=${encodeURIComponent(role.code)}">مجوزها</a>
+                    </td>
+                </tr>`).join('');
+            summary.textContent = `${roles.length} نقش`;
+        } catch (error) {
+            showError('ارتباط با سرور برقرار نشد.');
+        }
+    }
+
+    document.getElementById('logout').addEventListener('click', async () => {
+        const stored = sessionStorage.getItem('refreshToken');
+        try {
+            await fetch('/api/v1/auth/logout', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({refreshToken: stored})
+            });
+        } catch (error) {
+            // A failed logout call must not keep the user inside the page.
+        }
+        signOut();
+    });
+
+    load();
+</script>
+</body>
+</html>

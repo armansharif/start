@@ -153,6 +153,18 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
+    public void removeRole(Long id, String roleCode) {
+        userDao.requireById(id);
+        Role role = roleRepository.findByCode(roleCode)
+                .orElseThrow(() -> new BusinessException(UserErrorCodes.UNKNOWN_ROLE));
+        String before = currentRoleCodes(id).toString();
+        userRoleRepository.deleteByUserIdAndRoleId(id, role.getId());
+        auditRecorder.record("USER_ROLE_REMOVE", ENTITY_NAME, String.valueOf(id), before,
+                currentRoleCodes(id).toString(), null);
+    }
+
+    @Override
+    @Transactional
     public void delete(Long id) {
         userDao.requireById(id);
         userRoleRepository.deleteByUserId(id);
@@ -176,6 +188,10 @@ public class UserServiceImpl implements UserService {
 
     private void assignRolesInternal(Long userId, Set<String> roleCodes) {
         userRoleRepository.deleteByUserId(userId);
+        // Hibernate runs inserts before deletes within one flush, so the old links must be
+        // gone before the new ones are written; otherwise re-saving an assigned role
+        // violates the unique key UK_USER_ROLE (USER_ID, ROLE_ID).
+        userRoleRepository.flush();
         if (roleCodes == null || roleCodes.isEmpty()) {
             return;
         }

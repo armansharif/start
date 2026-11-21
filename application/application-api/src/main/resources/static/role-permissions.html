@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>مجوزهای نقش | Backend Platform</title>
+    <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<header class="topbar">
+    <div>
+        <h1>مجوزهای نقش</h1>
+        <p class="who" id="who">—</p>
+    </div>
+    <nav class="nav">
+        <a href="/users.html">کاربران</a>
+        <a href="/roles.html">نقش‌ها</a>
+        <button type="button" class="btn-ghost" id="logout">خروج</button>
+    </nav>
+</header>
+
+<main class="page">
+    <div class="alert" id="error" role="alert"></div>
+    <div class="alert ok" id="success" role="status"></div>
+
+    <section class="card card-pad user-head">
+        <div>
+            <h2 id="role-name">—</h2>
+            <p class="who" id="role-meta">—</p>
+        </div>
+        <a class="btn-ghost btn-link" href="/roles.html">بازگشت به نقش‌ها</a>
+    </section>
+
+    <section class="card card-pad">
+        <h3>مجوزهای این نقش</h3>
+        <p class="muted-small">مجوزهای مورد نظر را انتخاب و ذخیره کنید؛ فهرست ارسالی جایگزین مجوزهای فعلی می‌شود.</p>
+        <div class="perm-catalog" id="perm-options">
+            <span class="muted-small">در حال بارگذاری…</span>
+        </div>
+        <div class="form-actions">
+            <button type="button" class="btn-primary btn-inline" id="save">ذخیره مجوزها</button>
+            <button type="button" class="btn-ghost" id="reset">بازگردانی</button>
+        </div>
+    </section>
+</main>
+
+<script>
+    const params = new URLSearchParams(location.search);
+    const roleCode = params.get('code');
+
+    if (!sessionStorage.getItem('accessToken')) {
+        location.replace('/');
+    } else if (!roleCode) {
+        location.replace('/roles.html');
+    }
+
+    const errorBox = document.getElementById('error');
+    const successBox = document.getElementById('success');
+    const permOptions = document.getElementById('perm-options');
+    const saveButton = document.getElementById('save');
+
+    let catalog = [];
+    let assignedCodes = [];
+
+    function currentUsername() {
+        const token = sessionStorage.getItem('accessToken');
+        if (!token || token.split('.').length < 2) {
+            return null;
+        }
+        try {
+            const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+            return JSON.parse(atob(base64)).username || null;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    document.getElementById('who').textContent =
+        'وارد شده به عنوان ' + (currentUsername() || 'کاربر');
+
+    function showError(message) {
+        successBox.classList.remove('visible');
+        errorBox.textContent = message;
+        errorBox.classList.add('visible');
+    }
+
+    function showSuccess(message) {
+        errorBox.classList.remove('visible');
+        successBox.textContent = message;
+        successBox.classList.add('visible');
+    }
+
+    function clearMessages() {
+        errorBox.classList.remove('visible');
+        successBox.classList.remove('visible');
+    }
+
+    function signOut() {
+        sessionStorage.clear();
+        location.replace('/');
+    }
+
+    function escapeHtml(value) {
+        return String(value == null ? '' : value)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    async function refreshToken() {
+        const stored = sessionStorage.getItem('refreshToken');
+        if (!stored) {
+            return false;
+        }
+        const response = await fetch('/api/v1/auth/refresh', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({refreshToken: stored})
+        });
+        const body = await response.json().catch(() => null);
+        if (!response.ok || !body || !body.success || !body.data) {
+            return false;
+        }
+        sessionStorage.setItem('accessToken', body.data.accessToken);
+        sessionStorage.setItem('refreshToken', body.data.refreshToken);
+        return true;
+    }
+
+    async function apiFetch(path, options) {
+        const send = (token) => fetch(path, {
+            ...options,
+            headers: {
+                ...(options && options.headers ? options.headers : {}),
+                ...(token ? {Authorization: 'Bearer ' + token} : {})
+            }
+        });
+
+        let response = await send(sessionStorage.getItem('accessToken'));
+        if (response.status === 401 && await refreshToken()) {
+            response = await send(sessionStorage.getItem('accessToken'));
+        }
+        if (response.status === 401) {
+            signOut();
+        }
+        return response;
+    }
+
+    function errorDetail(body, fallback) {
+        return (body && (body.message || (body.errors && body.errors[0] && body.errors[0].message))) || fallback;
+    }
+
+    function renderOptions() {
+        if (catalog.length === 0) {
+            permOptions.innerHTML = '<span class="muted-small">مجوزی تعریف نشده است.</span>';
+            return;
+        }
+        permOptions.innerHTML = catalog.map((permission) => `
+            <label class="role-option">
+                <input type="checkbox" value="${escapeHtml(permission.code)}"
+                       ${assignedCodes.includes(permission.code) ? 'checked' : ''}>
+                <span>${escapeHtml(permission.title)} <code>${escapeHtml(permission.code)}</code></span>
+            </label>`).join('');
+    }
+
+    function selectedCodes() {
+        return Array.from(permOptions.querySelectorAll('input[type="checkbox"]'))
+            .filter((input) => input.checked)
+            .map((input) => input.value);
+    }
+
+    async function loadCatalog() {
+        const response = await apiFetch('/api/v1/permissions');
+        const body = await response.json().catch(() => null);
+        if (response.status === 401) {
+            return false;
+        }
+        if (!response.ok || !body || !body.success) {
+            showError(errorDetail(body, 'دریافت لیست مجوزها ناموفق بود.'));
+            return false;
+        }
+        catalog = body.data || [];
+        return true;
+    }
+
+    async function loadRolePermissions() {
+        const response = await apiFetch('/api/v1/roles/' + encodeURIComponent(roleCode) + '/permissions');
+        const body = await response.json().catch(() => null);
+        if (response.status === 401) {
+            return false;
+        }
+        if (!response.ok || !body || !body.success) {
+            showError(errorDetail(body, 'دریافت مجوزهای نقش ناموفق بود.'));
+            return false;
+        }
+        const role = body.data;
+        document.getElementById('role-name').textContent = role.title || role.code;
+        document.getElementById('role-meta').textContent = 'کد نقش: ' + role.code;
+        assignedCodes = (role.permissions || []).slice();
+        return true;
+    }
+
+    async function reload(message) {
+        clearMessages();
+        const ok = await loadRolePermissions() && await loadCatalog();
+        if (!ok) {
+            return;
+        }
+        renderOptions();
+        if (message) {
+            showSuccess(message);
+        }
+    }
+
+    async function savePermissions() {
+        const codes = selectedCodes();
+        if (codes.length === 0 && !confirm('با این کار همهٔ مجوزهای این نقش حذف می‌شود. ادامه می‌دهید؟')) {
+            return;
+        }
+        saveButton.disabled = true;
+        try {
+            const response = await apiFetch('/api/v1/roles/' + encodeURIComponent(roleCode) + '/permissions', {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({permissions: codes})
+            });
+            const body = await response.json().catch(() => null);
+            if (response.status === 401) {
+                return;
+            }
+            if (!response.ok || !body || !body.success) {
+                showError(errorDetail(body, 'ذخیره مجوزها ناموفق بود.'));
+                return;
+            }
+            await reload('مجوزهای نقش ذخیره شد.');
+        } catch (error) {
+            showError('ارتباط با سرور برقرار نشد.');
+        } finally {
+            saveButton.disabled = false;
+        }
+    }
+
+    saveButton.addEventListener('click', savePermissions);
+    document.getElementById('reset').addEventListener('click', () => reload());
+
+    document.getElementById('logout').addEventListener('click', async () => {
+        const stored = sessionStorage.getItem('refreshToken');
+        try {
+            await fetch('/api/v1/auth/logout', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({refreshToken: stored})
+            });
+        } catch (error) {
+            // A failed logout call must not keep the user inside the page.
+        }
+        signOut();
+    });
+
+    if (roleCode && sessionStorage.getItem('accessToken')) {
+        reload();
+    }
+</script>
+</body>
+</html>

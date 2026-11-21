@@ -11,7 +11,10 @@ public enum UserErrorCodes implements ErrorCode {
     DUPLICATE_MOBILE("USER-1002", "error.user.duplicateMobile", "Mobile number is already registered"),
     UNKNOWN_ROLE("USER-1003", "error.user.unknownRole", "One or more roles do not exist"),
     INVALID_BIRTH_DATE("USER-1004", "error.user.invalidBirthDate", "Birth date is not a valid Persian date"),
-    USER_NOT_FOUND("USER-1005", "error.user.notFound", "User not found");
+    USER_NOT_FOUND("USER-1005", "error.user.notFound", "User not found"),
+    UNKNOWN_PERMISSION("USER-1006", "error.user.unknownPermission",
+            "One or more permissions do not exist"),
+    ROLE_NOT_FOUND("USER-1007", "error.role.notFound", "Role not found");
 
     private final String code;
     private final String messageKey;

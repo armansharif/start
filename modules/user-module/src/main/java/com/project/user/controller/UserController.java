@@ -94,6 +94,13 @@ public class UserController {
         return ApiResponse.of(null, "Roles assigned");
     }
 
+    @DeleteMapping("/{id}/roles/{roleCode}")
+    @PreAuthorize("hasAuthority('user:assign-role')")
+    public ApiResponse<Void> removeRole(@PathVariable Long id, @PathVariable String roleCode) {
+        userService.removeRole(id, roleCode);
+        return ApiResponse.of(null, "Role removed");
+    }
+
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAuthority('user:delete')")
     public ApiResponse<Void> delete(@PathVariable Long id) {

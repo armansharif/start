@@ -247,6 +247,53 @@
       ]
     },
     {
+      "name": "Roles",
+      "description": "Role catalogue, role removal and role permissions. Reading needs user:read; changing roles or permissions needs user:assign-role.",
+      "item": [
+        {
+          "name": "List roles",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/v1/roles", "host": ["{{baseUrl}}"], "path": ["api", "v1", "roles"] },
+            "description": "All assignable roles ordered by code (authority: user:read). The assignment screens load their checkbox list from here."
+          }
+        },
+        {
+          "name": "Remove role from user",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/v1/users/{{userId}}/roles/USER", "host": ["{{baseUrl}}"], "path": ["api", "v1", "users", "{{userId}}", "roles", "USER"] },
+            "description": "Removes a single role from the user in {{userId}} and keeps the rest (authority: user:assign-role). To replace the whole set use \"Assign roles\"."
+          }
+        },
+        {
+          "name": "List permissions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/v1/permissions", "host": ["{{baseUrl}}"], "path": ["api", "v1", "permissions"] },
+            "description": "Permission catalogue ordered by code (authority: user:read). The role-permissions screen renders one checkbox per entry."
+          }
+        },
+        {
+          "name": "Set role permissions",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"permissions\": [\"user:read\", \"user:update\"]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/roles/USER/permissions", "host": ["{{baseUrl}}"], "path": ["api", "v1", "roles", "USER", "permissions"] },
+            "description": "Replaces the whole permission set of the role in the path and returns the saved state (authority: user:assign-role). GET the same URL to read the current set."
+          }
+        }
+      ]
+    },
+    {
       "name": "System",
       "description": "Documentation and health. Health is on the separate management port and reports DOWN while Redis is unreachable.",
       "item": [

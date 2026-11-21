@@ -172,7 +172,8 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/health/**", "/actuator/info").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         // The static pages are shells only: the data they show still needs a token.
-                        .requestMatchers("/", "/index.html", "/users.html", "/app.css").permitAll()
+                        .requestMatchers("/", "/index.html", "/users.html", "/user-roles.html",
+                                "/roles.html", "/role-permissions.html", "/app.css").permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();

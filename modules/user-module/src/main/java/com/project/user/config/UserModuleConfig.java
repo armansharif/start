@@ -11,6 +11,8 @@ import com.project.common.search.limits.SearchLimits;
 import com.project.common.search.metadata.SearchMetadataRegistry;
 import com.project.common.security.authentication.AuthenticationUserPort;
 import com.project.user.dao.PermissionQueryDao;
+import com.project.user.dao.PermissionRepository;
+import com.project.user.dao.RolePermissionRepository;
 import com.project.user.dao.RoleRepository;
 import com.project.user.dao.UserRepository;
 import com.project.user.dao.UserRoleRepository;
@@ -19,9 +21,11 @@ import com.project.user.dao.impl.UserJpaDao;
 import com.project.user.dao.impl.UserReportJdbcDao;
 import com.project.user.interface_.dao.UserDao;
 import com.project.user.interface_.dao.UserReportDao;
+import com.project.user.interface_.service.RoleService;
 import com.project.user.interface_.service.UserService;
 import com.project.user.mapper.UserMapper;
 import com.project.user.security.UserAuthenticationAdapter;
+import com.project.user.service.impl.RoleServiceImpl;
 import com.project.user.service.impl.UserServiceImpl;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -76,6 +80,15 @@ public class UserModuleConfig {
         return new UserServiceImpl(userDao, userReportJdbcDao, userRoleRepository, roleRepository,
                 passwordEncoder, userMapper, persianDateParser, persianDateConverter,
                 persianDateFormatter, auditRecorder);
+    }
+
+    @Bean
+    public RoleService roleService(RoleRepository roleRepository,
+                                   PermissionRepository permissionRepository,
+                                   RolePermissionRepository rolePermissionRepository,
+                                   AuditRecorder auditRecorder) {
+        return new RoleServiceImpl(roleRepository, permissionRepository, rolePermissionRepository,
+                auditRecorder);
     }
 
     @Bean
